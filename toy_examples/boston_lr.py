@@ -87,11 +87,7 @@ for epoch in tqdm(range(num_epochs)):
         pred_train = model(inputs_train)
         l = loss(pred_train, targets_train)
 
-        """
-        When we compute our loss at time PyTorch creates the autograd graph with the operations as nodes. 
-        When we call loss.backward(), PyTorch traverses this graph in the reverse direction to compute the gradients. 
-        At this point, the grad attribute of params contains the derivatives of the loss with respect to each element of params.
-        """
+        # get gradients w.r.t. parameters
         l.backward()
 
         # update model weights
