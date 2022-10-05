@@ -16,6 +16,8 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 TARGET = 'Price'
 
+torch.manual_seed(0)
+
 
 def load_data():
     bos = load_boston()
