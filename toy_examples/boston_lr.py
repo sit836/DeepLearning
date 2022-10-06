@@ -42,8 +42,8 @@ def numpy2tensor(X_train_arr, X_test_arr, y_train_arr, y_test_arr):
     return X_train, X_test, y_train, y_test
 
 
-batch_size_train = 30
-num_epochs = 200
+batch_size_train = 50
+num_epochs = 300
 learning_rate = 0.01
 
 print(torch.__version__)
@@ -57,7 +57,6 @@ print(f'X_train_raw_arr.shape, X_test_raw_arr.shape: {X_train_raw_arr.shape, X_t
 
 X_train_arr, X_test_arr = standardize_features(X_train_raw_arr, X_test_raw_arr)
 X_train, X_test, y_train, y_test = numpy2tensor(X_train_arr, X_test_arr, y_train_arr, y_test_arr)
-print(f'type(X_train_arr), type(X_train): {type(X_train_arr), type(X_train)}')
 
 num_features = X_train.shape[1]
 model = torch.nn.Sequential(
@@ -78,7 +77,7 @@ optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 training_loss = []
 for epoch in tqdm(range(num_epochs)):
     for inputs_train, targets_train in train_dl:
-        # print(x.shape)
+        # print(inputs_train.shape)
 
         # print("Before zero grad : ", model[0].weight.grad)
 
@@ -89,7 +88,7 @@ for epoch in tqdm(range(num_epochs)):
         pred_train = model(inputs_train)
         l = loss(pred_train, targets_train)
 
-        # get gradients w.r.t. parameters
+        # compute gradients w.r.t. parameters
         l.backward()
 
         # update model weights
