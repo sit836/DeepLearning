@@ -51,7 +51,7 @@ plot_word_vectors(U, words, "SVD")
 # TruncatedSVD
 plot_singular_vals(s)
 
-n_components = 6
+n_components = 7
 svd_trunc = TruncatedSVD(n_components=n_components, random_state=123)
 svd_trunc.fit(cooc_arr)
 plot_word_vectors(svd_trunc.components_.T, words, f"TruncatedSVD with n_components={n_components}")
