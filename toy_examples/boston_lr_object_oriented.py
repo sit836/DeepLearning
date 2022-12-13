@@ -87,6 +87,7 @@ for epoch in tqdm(range(num_epochs)):
         # clear the gradients
         optimizer.zero_grad()
 
+        # __call__ method inherited from the nn.Module class turns model, an instance of the class, into callables: behave like a function
         pred_train = model(inputs_train)
         l = loss(pred_train, targets_train)
 
