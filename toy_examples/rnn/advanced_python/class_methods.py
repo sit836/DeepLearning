@@ -3,7 +3,7 @@
 """
 
 
-class A(object):
+class A:
     def m1(self, n):
         print("self:", self)
 

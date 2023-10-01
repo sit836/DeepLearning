@@ -5,12 +5,44 @@
 """
 
 """
-An iterable object is an object that implements __iter__, which is expected to return an iterator object.
+Definitions
 
-An iterator object implements __next__, which is expected to return the next element of the iterable object 
-that returned it, and to raise a StopIteration exception when no more elements are available.
+Iterator: any object whose class has a __next__ method and an __iter__ method that does return self.
 
+Generator: Every generator is an iterator, but not vice versa. A generator is built by calling a function that
+has one or more yield expressions, and is an object that meets the definition of an iterator.
 """
+listA = ['a', 'e', 'i']
+
+my_iter = listA.__iter__()
+print(my_iter.__next__())
+print(my_iter.__next__())
+print(my_iter.__next__())
+
+
+###
+class Counter:
+    def __init__(self, start, end):
+        self.num = start
+        self.end = end
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.num > self.end:
+            raise StopIteration
+        else:
+            self.num += 1
+            return self.num - 1
+
+
+c1 = Counter(start=2, end=5)
+for i in c1:
+    print("Eating more Pizzas, counting ", i, end="\n")
+
+
+###
 def first_n_naive(n: int) -> list:
     num, nums = 0, []
     while num <= n:
@@ -19,13 +51,13 @@ def first_n_naive(n: int) -> list:
     return nums
 
 
-class FirstN(object):
+class FirstN:
     def __init__(self, n):
         self.n = n
         self.num = 0
 
     def __iter__(self):
-        return self
+        return self  # see class_methods.py
 
     def __next__(self):
         return self.next()
@@ -40,7 +72,6 @@ class FirstN(object):
 def firstn_generator(n: int):
     num = 0
     while num <= n:
-        print(f'num: {num}')
         yield num
         num += 1
 
