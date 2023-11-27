@@ -41,13 +41,22 @@ class RNNLMScratch(d2l.Classifier):
         return torch.stack(outputs, 1)
 
     def forward(self, X, state=None):
-        print(f'X: {X}')
         embs = self.one_hot(X)
-        print(f'embs: {embs}')
-        print(f'embs.shape: {embs.shape}')  # embs.shape: torch.Size([32, 2, 28])
-
         rnn_outputs, _ = self.rnn(embs, state)
         return self.output_layer(rnn_outputs)
+
+    def predict(self, prefix, num_preds, vocab, device=None):
+        state, outputs = None, [vocab[prefix[0]]]
+        for i in range(len(prefix) + num_preds - 1):
+            X = torch.tensor([[outputs[-1]]], device=device)
+            embs = self.one_hot(X)
+            rnn_outputs, state = self.rnn(embs, state)
+            if i < len(prefix) - 1:  # Warm-up period
+                outputs.append(vocab[prefix[i + 1]])
+            else:  # Predict num_preds steps
+                Y = self.output_layer(rnn_outputs)
+                outputs.append(int(Y.argmax(dim=2).reshape(1)))
+        return ''.join([vocab.idx_to_token[i] for i in outputs])
 
 
 if __name__ == "__main__":
@@ -61,12 +70,19 @@ if __name__ == "__main__":
     # print(f'outputs: {outputs}')
     # print(f'outputs.shape: {outputs.shape}')
 
-    data = d2l.TimeMachine(batch_size=1024, num_steps=32)
+    device_name = 'cuda:0'
+    lr = 1
+    batch_size, num_hiddens, num_steps = 1024, 32, 32
+    data = d2l.TimeMachine(batch_size=batch_size, num_steps=num_steps)
     print(f'data.vocab.token_to_idx: {data.vocab.token_to_idx}')
-    # quit()
 
-    rnn = RNNScratch(num_inputs=len(data.vocab), num_hiddens=32)
-    model = RNNLMScratch(rnn, vocab_size=len(data.vocab), lr=1)
-    trainer = d2l.Trainer(max_epochs=5, gradient_clip_val=1, num_gpus=1)
+    rnn = RNNScratch(num_inputs=len(data.vocab), num_hiddens=num_hiddens)
+    model = RNNLMScratch(rnn, vocab_size=len(data.vocab), lr=lr)
+    trainer = d2l.Trainer(max_epochs=20, gradient_clip_val=1, num_gpus=1)
     trainer.fit(model, data)
-    plt.show()
+    # plt.show()
+
+    pred = model.predict('it has', num_preds=10, vocab=data.vocab, device=device_name)
+    print(f'pred: {pred}')
+
+    from torchviz import make_dot

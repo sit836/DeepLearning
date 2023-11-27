@@ -39,7 +39,6 @@ if __name__ == "__main__":
     rnn = RNNScratch(num_inputs, num_hiddens)
     X = torch.ones((num_steps, batch_size, num_inputs))
     outputs, state = rnn(X)
-    print(f'batch_size, num_inputs, num_hiddens, num_steps: {batch_size, num_inputs, num_hiddens, num_steps}')
     print(f'outputs: {outputs}')
     print(f'X.shape: {X.shape}')
     print(f'state.shape: {state.shape}')
