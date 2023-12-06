@@ -80,9 +80,7 @@ if __name__ == "__main__":
     model = RNNLMScratch(rnn, vocab_size=len(data.vocab), lr=lr)
     trainer = d2l.Trainer(max_epochs=20, gradient_clip_val=1, num_gpus=1)
     trainer.fit(model, data)
-    # plt.show()
+    plt.show()
 
     pred = model.predict('it has', num_preds=10, vocab=data.vocab, device=device_name)
-    print(f'pred: {pred}')
-
-    from torchviz import make_dot
+    print(pred)
