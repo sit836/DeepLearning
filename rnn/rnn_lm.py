@@ -72,7 +72,7 @@ if __name__ == "__main__":
 
     device_name = 'cuda:0'
     lr = 1
-    batch_size, num_hiddens, num_steps = 1024, 32, 32
+    batch_size, num_hiddens, num_steps = 1024, 8, 32
     data = d2l.TimeMachine(batch_size=batch_size, num_steps=num_steps)
     print(f'data.vocab.token_to_idx: {data.vocab.token_to_idx}')
 

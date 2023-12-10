@@ -1,3 +1,6 @@
+import collections
+import math
+
 import torch
 from d2l import torch as d2l
 from torch import nn
@@ -95,21 +98,6 @@ class Decoder(nn.Module):
         raise NotImplementedError
 
 
-class EncoderDecoder(d2l.Classifier):
-    """The base class for the encoder-decoder architecture."""
-
-    def __init__(self, encoder, decoder):
-        super().__init__()
-        self.encoder = encoder
-        self.decoder = decoder
-
-    def forward(self, enc_X, dec_X, *args):
-        enc_all_outputs = self.encoder(enc_X, *args)
-        dec_state = self.decoder.init_state(enc_all_outputs, *args)
-        # Return decoder output only
-        return self.decoder(dec_X, dec_state)[0]
-
-
 def init_seq2seq(module):
     """Initialize weights for Seq2Seq."""
     if type(module) == nn.Linear:
@@ -168,7 +156,7 @@ class Seq2SeqDecoder(d2l.Decoder):
         # Broadcast context to (num_steps, batch_size, num_hiddens)
         context = context.repeat(embs.shape[0], 1, 1)
         # Concat at the feature dimension
-        embs_and_context = torch.cat((embs, context), -1)
+        embs_and_context = torch.cat((embs, context), -1)  # the dimension over which the tensors are concatenated
         outputs, hidden_state = self.rnn(embs_and_context, hidden_state)
         outputs = self.dense(outputs).swapaxes(0, 1)
         # outputs shape: (batch_size, num_steps, vocab_size)
@@ -176,48 +164,113 @@ class Seq2SeqDecoder(d2l.Decoder):
         return outputs, [enc_output, hidden_state]
 
 
+class Seq2Seq(d2l.EncoderDecoder):
+    """The RNN encoder-decoder for sequence to sequence learning."""
+
+    def __init__(self, encoder, decoder, tgt_pad, lr):
+        super().__init__(encoder, decoder)
+        self.save_hyperparameters()
+
+    def validation_step(self, batch):
+        Y_hat = self(*batch[:-1])
+        self.plot('loss', self.loss(Y_hat, batch[-1]), train=False)
+
+    def configure_optimizers(self):
+        # Adam optimizer is used here
+        return torch.optim.Adam(self.parameters(), lr=self.lr)
+
+    def loss(self, Y_hat, Y):
+        l = super(Seq2Seq, self).loss(Y_hat, Y, averaged=False)
+        mask = (Y.reshape(-1) != self.tgt_pad).type(torch.float32)
+        return (l * mask).sum() / mask.sum()
+
+
+def bleu(pred_seq, label_seq, k):
+    """Compute the BLEU."""
+    pred_tokens, label_tokens = pred_seq.split(' '), label_seq.split(' ')
+    len_pred, len_label = len(pred_tokens), len(label_tokens)
+    score = math.exp(min(0, 1 - len_label / len_pred))
+    for n in range(1, min(k, len_pred) + 1):
+        num_matches, label_subs = 0, collections.defaultdict(int)
+    for i in range(len_label - n + 1):
+        label_subs[' '.join(label_tokens[i: i + n])] += 1
+    for i in range(len_pred - n + 1):
+        if label_subs[' '.join(pred_tokens[i: i + n])] > 0:
+            num_matches += 1
+            label_subs[' '.join(pred_tokens[i: i + n])] -= 1
+    score *= math.pow(num_matches / (len_pred - n + 1), math.pow(0.5, n))
+    return score
+
+
 if __name__ == "__main__":
     torch.manual_seed(123)
 
-    batch_size = 32
-    data = MTFraEng(batch_size)
-    raw_text = data._download()
-    # print(raw_text[:75])
-
-    text = data._preprocess(raw_text)
-    # print(text[:80])
-
-    src, tgt = data._tokenize(text)
-    print(src[:6])
-    print(tgt[:6])
+    # batch_size = 32
+    # data = MTFraEng(batch_size)
+    # raw_text = data._download()
+    # # print(raw_text[:75])
+    #
+    # text = data._preprocess(raw_text)
+    # # print(text[:80])
+    #
+    # src, tgt = data._tokenize(text)
+    # print(src[:6])
+    # print(tgt[:6])
+    #
+    # #
+    # data = MTFraEng(batch_size=3)
+    # src, tgt, src_valid_len, label = next(iter(data.train_dataloader()))
+    #
+    # print(data.src_vocab.token_to_idx)
+    # print(data.tgt_vocab.token_to_idx)
+    #
+    # print('source:', src.type(torch.int32))
+    # print('decoder input:', tgt.type(torch.int32))
+    # print('source len excluding pad:', src_valid_len.type(torch.int32))
+    # print('label:', label.type(torch.int32))
+    #
+    # #
+    # src, tgt, _, _ = data.build(['hi .'], ['salut .'])
+    # print('source:', data.src_vocab.to_tokens(src[0].type(torch.int32)))
+    # print('target:', data.tgt_vocab.to_tokens(tgt[0].type(torch.int32)))
+    #
+    # #
+    # vocab_size, embed_size, num_hiddens, num_layers = 10, 8, 16, 2
+    # batch_size, num_steps = 6, 9
+    # encoder = Seq2SeqEncoder(vocab_size, embed_size, num_hiddens, num_layers)
+    # X = torch.zeros((batch_size, num_steps))
+    # enc_outputs, enc_state = encoder(X)
+    # print(f'enc_outputs.shape: {enc_outputs.shape}')
+    # print(f'enc_state.shape: {enc_state.shape}')
+    #
+    # #
+    # decoder = Seq2SeqDecoder(vocab_size, embed_size, num_hiddens, num_layers)
+    # state = decoder.init_state(encoder(X))
+    # dec_outputs, state = decoder(X, state)
 
     #
-    data = MTFraEng(batch_size=3)
-    src, tgt, src_valid_len, label = next(iter(data.train_dataloader()))
-
-    print(data.src_vocab.token_to_idx)
-    print(data.tgt_vocab.token_to_idx)
-
-    print('source:', src.type(torch.int32))
-    print('decoder input:', tgt.type(torch.int32))
-    print('source len excluding pad:', src_valid_len.type(torch.int32))
-    print('label:', label.type(torch.int32))
-
-    #
-    src, tgt, _, _ = data.build(['hi .'], ['salut .'])
-    print('source:', data.src_vocab.to_tokens(src[0].type(torch.int32)))
-    print('target:', data.tgt_vocab.to_tokens(tgt[0].type(torch.int32)))
+    data = d2l.MTFraEng(batch_size=128)
+    embed_size, num_hiddens, num_layers, dropout = 256, 256, 2, 0.2
+    encoder = Seq2SeqEncoder(
+        len(data.src_vocab), embed_size, num_hiddens, num_layers, dropout)
+    decoder = Seq2SeqDecoder(
+        len(data.tgt_vocab), embed_size, num_hiddens, num_layers, dropout)
+    model = Seq2Seq(encoder, decoder, tgt_pad=data.tgt_vocab['<pad>'],
+                    lr=0.005)
+    trainer = d2l.Trainer(max_epochs=100, gradient_clip_val=1, num_gpus=1)
+    trainer.fit(model, data)
 
     #
-    vocab_size, embed_size, num_hiddens, num_layers = 10, 8, 16, 2
-    batch_size, num_steps = 4, 9
-    encoder = Seq2SeqEncoder(vocab_size, embed_size, num_hiddens, num_layers)
-    X = torch.zeros((batch_size, num_steps))
-    enc_outputs, enc_state = encoder(X)
-    print(f'enc_outputs.shape: {enc_outputs.shape}')
-    print(f'enc_state.shape: {enc_state.shape}')
+    engs = ['go .', 'i lost .', 'he\'s calm .', 'i\'m home .']
+    fras = ['va !', 'j\'ai perdu .', 'il est calme .', 'je suis chez moi .']
+    preds, _ = model.predict_step(
+        data.build(engs, fras), d2l.try_gpu(), data.num_steps)
 
-    #
-    decoder = Seq2SeqDecoder(vocab_size, embed_size, num_hiddens, num_layers)
-    state = decoder.init_state(encoder(X))
-    dec_outputs, state = decoder(X, state)
+    for en, fr, p in zip(engs, fras, preds):
+        translation = []
+        for token in data.tgt_vocab.to_tokens(p):
+            if token == '<eos>':
+                break
+            translation.append(token)
+        print(f'{en} => {translation}, bleu,'
+              f'{bleu(" ".join(translation), fr, k=2):.3f}')
