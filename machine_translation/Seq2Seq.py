@@ -151,6 +151,7 @@ class Seq2SeqDecoder(d2l.Decoder):
         # embs shape: (num_steps, batch_size, embed_size)
         embs = self.embedding(X.t().type(torch.int32))
         enc_output, hidden_state = state
+        # hidden_state shape: (num_layers, batch_size, num_hiddens)
         # context shape: (batch_size, num_hiddens)
         context = enc_output[-1]  # enc_output at the final time step
         # Broadcast context to (num_steps, batch_size, num_hiddens)
@@ -249,8 +250,8 @@ if __name__ == "__main__":
     # dec_outputs, state = decoder(X, state)
 
     #
-    data = d2l.MTFraEng(batch_size=128)
-    embed_size, num_hiddens, num_layers, dropout = 256, 256, 2, 0.2
+    data = d2l.MTFraEng(batch_size=8)
+    embed_size, num_hiddens, num_layers, dropout = 32, 4, 3, 0.2
     encoder = Seq2SeqEncoder(
         len(data.src_vocab), embed_size, num_hiddens, num_layers, dropout)
     decoder = Seq2SeqDecoder(
