@@ -99,9 +99,6 @@ class TransformerDecoderBlock(nn.Module):
         else:
             key_values = torch.cat((state[2][self.i], X), dim=1)
 
-        # if not self.training:
-        #     print(f'self.training, X.shape: {self.training, X.shape}')
-
         state[2][self.i] = key_values
         if self.training:
             batch_size, num_steps, _ = X.shape
@@ -111,9 +108,12 @@ class TransformerDecoderBlock(nn.Module):
                 1, num_steps + 1, device=X.device).repeat(batch_size, 1)
         else:
             dec_valid_lens = None
+            # print(f'state[2][self.i]: {state[2][self.i]}')
+            print(f'key_values.shape: {key_values.shape}')
+
         # Self-attention
         X2 = self.attention1(X, key_values, key_values, dec_valid_lens)
-        Y = self.addnorm1(X, X2)
+        Y = self.addnorm1(X, X2)  # Shape of Y: (batch_size, num_steps, num_hiddens)
         # Encoder-decoder attention. Shape of enc_outputs:
         # (batch_size, num_steps, num_hiddens)
         Y2 = self.attention2(Y, enc_outputs, enc_outputs, enc_valid_lens)
@@ -156,53 +156,56 @@ class TransformerDecoder(d2l.AttentionDecoder):
 if __name__ == "__main__":
     torch.manual_seed(0)
 
-    batch_size = 2
-    num_steps = 3
-    ffn_num_hiddens = 4
-    ffn_num_outputs = 8
-    num_hiddens = 5
-
-    ffn = PositionWiseFFN(ffn_num_hiddens, ffn_num_outputs)
-    ffn.eval()
+    # batch_size = 2
+    # num_steps = 3
+    # ffn_num_hiddens = 4
+    # ffn_num_outputs = 8
+    # num_hiddens = 5
+    #
+    # ffn = PositionWiseFFN(ffn_num_hiddens, ffn_num_outputs)
+    # ffn.eval()
+    #
+    # #
+    # ln = nn.LayerNorm(2)
+    # bn = nn.LazyBatchNorm1d()
+    # X = torch.tensor([[1, 2], [2, 300]], dtype=torch.float32)
+    # # print('layer norm:', ln(X), '\nbatch norm:', bn(X))
+    #
+    # #
+    # add_norm = AddNorm(num_hiddens, dropout=0.5)
+    # shape = (batch_size, num_steps, num_hiddens)
+    # d2l.check_shape(add_norm(torch.ones(shape), torch.ones(shape)), shape)
+    #
+    # #
+    # batch_size, num_steps = 2, 100
+    # num_hiddens, ffn_num_hiddens, num_heads = 24, 48, 8
+    # X = torch.ones((batch_size, num_steps, num_hiddens))
+    # valid_lens = torch.tensor([3, 2])
+    # encoder_blk = TransformerEncoderBlock(num_hiddens, ffn_num_hiddens, num_heads, dropout=0.5)
+    # encoder_blk.eval()
+    # d2l.check_shape(encoder_blk(X, valid_lens), X.shape)
 
     #
-    ln = nn.LayerNorm(2)
-    bn = nn.LazyBatchNorm1d()
-    X = torch.tensor([[1, 2], [2, 300]], dtype=torch.float32)
-    # print('layer norm:', ln(X), '\nbatch norm:', bn(X))
+    # batch_size, num_steps = 3, 100
+    # vocab_size, num_hiddens, ffn_num_hiddens, num_heads, num_blks = 200, 24, 48, 8, 2
+    # valid_lens = torch.tensor([3] * batch_size)
+    # encoder = TransformerEncoder(vocab_size, num_hiddens, ffn_num_hiddens, num_heads, num_blks, dropout=0.5)
+    # d2l.check_shape(encoder(torch.ones((batch_size, num_steps), dtype=torch.long), valid_lens),
+    #                 (batch_size, num_steps, num_hiddens))
+    #
+    # #
+    # num_hiddens, ffn_num_hiddens, num_heads = 24, 48, 8
+    # encoder_blk = TransformerEncoderBlock(num_hiddens, ffn_num_hiddens, num_heads, dropout=0.5)
+    # block_idx = 0
+    # decoder_blk = TransformerDecoderBlock(num_hiddens, ffn_num_hiddens, num_heads, dropout=0.5, i=block_idx)
+    # X = torch.ones((batch_size, num_steps, num_hiddens))
+    # state = [encoder_blk(X, valid_lens), valid_lens, [None]]
+    # d2l.check_shape(decoder_blk(X, state)[0], X.shape)
 
     #
-    add_norm = AddNorm(num_hiddens, dropout=0.5)
-    shape = (batch_size, num_steps, num_hiddens)
-    d2l.check_shape(add_norm(torch.ones(shape), torch.ones(shape)), shape)
-
-    #
-    batch_size, num_steps = 2, 100
-    num_hiddens, ffn_num_hiddens, num_heads = 24, 48, 8
-    X = torch.ones((batch_size, num_steps, num_hiddens))
-    valid_lens = torch.tensor([3, 2])
-    encoder_blk = TransformerEncoderBlock(num_hiddens, ffn_num_hiddens, num_heads, dropout=0.5)
-    encoder_blk.eval()
-    d2l.check_shape(encoder_blk(X, valid_lens), X.shape)
-
-    #
-    batch_size, num_steps = 2, 100
-    vocab_size, num_hiddens, ffn_num_hiddens, num_heads, num_blks = 200, 24, 48, 8, 2
-    encoder = TransformerEncoder(vocab_size, num_hiddens, ffn_num_hiddens, num_heads, num_blks, dropout=0.5)
-    d2l.check_shape(encoder(torch.ones((batch_size, num_steps), dtype=torch.long), valid_lens),
-                    (batch_size, num_steps, num_hiddens))
-
-    #
-    num_hiddens, ffn_num_hiddens, num_heads = 24, 48, 8
-    block_idx = 0
-    decoder_blk = TransformerDecoderBlock(num_hiddens, ffn_num_hiddens, num_heads, dropout=0.5, i=block_idx)
-    X = torch.ones((batch_size, num_steps, num_hiddens))
-    state = [encoder_blk(X, valid_lens), valid_lens, [None]]
-    d2l.check_shape(decoder_blk(X, state)[0], X.shape)
-
-    #
-    data = d2l.MTFraEng(batch_size=128)
-    num_hiddens, num_blks, dropout = 256, 2, 0.2
+    batch_size = 128
+    data = d2l.MTFraEng(batch_size=batch_size)
+    num_hiddens, num_blks, dropout = 256, 3, 0.2
     ffn_num_hiddens, num_heads = 64, 4
 
     encoder = TransformerEncoder(
@@ -217,8 +220,8 @@ if __name__ == "__main__":
     trainer.fit(model, data)
 
     #
-    engs = ['go .', 'i lost .', 'he\'s calm .', 'i\'m home .', 'aaa']
-    fras = ['va !', 'j\'ai perdu .', 'il est calme .', 'je suis chez moi .', 'bbb']
+    engs = ['go .', 'i lost .', 'he\'s calm .', 'i\'m home .']
+    fras = ['va !', 'j\'ai perdu .', 'il est calme .', 'je suis chez moi .']
     print(f'data.num_steps: {data.num_steps}')  # data.num_steps: 9
     preds, _ = model.predict_step(
         data.build(engs, fras), d2l.try_gpu(), data.num_steps)

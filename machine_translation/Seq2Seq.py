@@ -250,7 +250,8 @@ if __name__ == "__main__":
     # dec_outputs, state = decoder(X, state)
 
     #
-    data = d2l.MTFraEng(batch_size=8)
+    batch_size = 8
+    data = d2l.MTFraEng(batch_size=batch_size)
     embed_size, num_hiddens, num_layers, dropout = 32, 4, 3, 0.2
     encoder = Seq2SeqEncoder(
         len(data.src_vocab), embed_size, num_hiddens, num_layers, dropout)
