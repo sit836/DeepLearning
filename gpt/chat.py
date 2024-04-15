@@ -1,7 +1,8 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 # model_name = "distilgpt2"
-model_name = "uer/gpt2-distil-chinese-cluecorpussmall"
+# model_name = "uer/gpt2-distil-chinese-cluecorpussmall"
+model_name = "uer/gpt2-large-chinese-cluecorpussmall"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(model_name, device_map='auto')

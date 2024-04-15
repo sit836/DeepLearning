@@ -29,7 +29,7 @@ def inference(prompt, model):
     inputs = tokenizer(prompt, return_tensors='pt')
     outputs = model.generate(inputs.input_ids,
                              pad_token_id=tokenizer.pad_token_id,
-                             max_new_tokens=100,
+                             max_new_tokens=200,
                              do_sample=True,
                              top_k=50,
                              top_p=0.95)
@@ -40,6 +40,9 @@ def inference(prompt, model):
 
     return outputs_string
 
+
+batch_size = 32
+num_train_epochs = 3
 
 model_name = 'distilgpt2'
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -53,10 +56,11 @@ prompt = 'Once upon a time'
 outputs_string = inference(prompt, model)
 print(f'base GPT2 model, outputs_string: {outputs_string}')
 
-data_size = 1000
+data_size = 5000
 small_stories_dataset = load_dataset('roneneldan/TinyStories', split=f'train[:{data_size}]')
 small_stories_dataset = small_stories_dataset.train_test_split(train_size=0.8)
 print(f'small_stories_dataset: {small_stories_dataset}')
+
 
 # plot_hist_tokens(small_stories_dataset, token_or_char='char')
 
@@ -68,7 +72,7 @@ def preprocess_batch(batch, max_length=1000):
 
 tokenized_dataset = small_stories_dataset.map(preprocess_batch,
                                               batched=True,
-                                              batch_size=32,
+                                              batch_size=batch_size,
                                               remove_columns=small_stories_dataset['train'].column_names,
                                               )
 print(tokenized_dataset['train'][0])
@@ -81,9 +85,7 @@ print(f'data_collator: {data_collator}')
 
 training_args = TrainingArguments(output_dir='./output',
                                   evaluation_strategy='epoch',
-                                  learning_rate=2e-5,
-                                  weight_decay=0.01,
-                                  num_train_epochs=3,
+                                  num_train_epochs=num_train_epochs,
                                   )
 trainer = Trainer(model=model,
                   train_dataset=tokenized_dataset['train'],
