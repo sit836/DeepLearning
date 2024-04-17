@@ -35,8 +35,8 @@ def inference(prompt, model):
                              top_p=0.95)
     outputs_string = tokenizer.batch_decode(outputs)
 
-    # print(f'inputs: {inputs}')
-    # print(f'outputs: {outputs}')
+    print(f'inputs: {inputs}')
+    print(f'outputs: {outputs}')
 
     return outputs_string
 
