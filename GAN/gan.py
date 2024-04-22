@@ -20,7 +20,7 @@ def update_D(X, Z, net_D, net_G, loss, trainer_D):
     loss_D = (loss(real_Y, ones.reshape(real_Y.shape)) +
               loss(fake_Y, zeros.reshape(fake_Y.shape))) / 2
     loss_D.backward()
-    trainer_D.step()  # Performs a single optimization step (parameter update).
+    trainer_D.step()
     return loss_D
 
 
