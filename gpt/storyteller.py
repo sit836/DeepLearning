@@ -61,7 +61,6 @@ small_stories_dataset = load_dataset('roneneldan/TinyStories', split=f'train[:{d
 small_stories_dataset = small_stories_dataset.train_test_split(train_size=0.8)
 print(f'small_stories_dataset: {small_stories_dataset}')
 
-
 # plot_hist_tokens(small_stories_dataset, token_or_char='char')
 
 
